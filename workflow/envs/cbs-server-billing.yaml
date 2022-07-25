@@ -1,0 +1,6 @@
+name: cbs-server-billing
+dependencies:
+  - python
+  - pandas
+  - xlrd
+  - jinja2

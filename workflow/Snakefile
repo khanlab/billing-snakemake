@@ -1,0 +1,38 @@
+FILENAMES, = glob_wildcards("results/{filename}.tex")
+
+rule all:
+    input: expand("results/{filename}.pdf", filename=FILENAMES)
+
+rule process_all_billing:
+    input:
+        pi="resources/Computational Core Server New PI Form (Responses).xlsx",
+        storage_update="resources/Computational Core Server PI Increase Storage Form (Responses).xlsx",
+        user="resources/Computational Core Server New User Form (Responses).xlsx",
+        user_update="resources/Computational Core Server Edit User Form (Responses).xlsx"
+    conda:
+        "envs/cbs-server-billing.yaml"
+    script:
+        "scripts/gen_bills.py"
+
+rule process_billing:
+    input:
+        pi="resources/Computational Core Server New PI Form (Responses).xlsx",
+        storage_update="resources/Computational Core Server PI Increase Storage Form (Responses).xlsx",
+        user="resources/Computational Core Server New User Form (Responses).xlsx",
+        user_update="resources/Computational Core Server Edit User Form (Responses).xlsx"
+    output:
+        "results/pi-{pi}_quarter-{quarter}_bill.tex"
+    conda:
+        "envs/cbs-server-billing.yaml"
+    script:
+        "scripts/gen_bills.py"
+
+rule generate_pdf:
+    input:
+        "results/{filename}.tex"
+    output:
+        "results/{filename}.pdf"
+    conda:
+        "envs/tectonic.yaml"
+    shell:
+        "tectonic {input}"
