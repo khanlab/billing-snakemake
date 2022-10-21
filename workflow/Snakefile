@@ -34,5 +34,7 @@ rule generate_pdf:
         "results/{filename}.pdf"
     conda:
         "envs/tectonic.yaml"
+    container:
+        "docker://dxjoke/tectonic-docker"
     shell:
         "tectonic {input}"
