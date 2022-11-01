@@ -1,3 +1,6 @@
+wildcard_constraints:
+    quarter="\d{4}-\d{2}-\d{2}"
+
 rule all:
     input: expand("results/{quarter}.finished", quarter=config["quarter"])
 
