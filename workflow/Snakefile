@@ -1,8 +1,19 @@
-wildcard_constraints:
-    quarter="\d{4}-\d{2}-\d{2}"
+from datetime import date, timedelta
+from cbsserverbilling.billing import get_end_of_period
 
-rule all:
-    input: expand("results/{quarter}.finished", quarter=config["quarter"])
+
+ISO_DATE = "\d{4}-\d{2}-\d{2}"
+
+
+wildcard_constraints:
+    quarter=ISO_DATE,
+    start_quarter=ISO_DATE,
+    end_date=ISO_DATE,
+
+
+class ConfigError(Exception):
+    """Raised if no appropriate config is defined."""
+
 
 checkpoint process_all_billing:
     input:
@@ -11,17 +22,18 @@ checkpoint process_all_billing:
         user="resources/CBS Server - New User account request.xlsx",
         user_update="resources/CBS Server - User account updates.xlsx",
     output:
-        quarter_dir=directory("results/tex_{quarter}")
+        quarter_dir=directory("results/tex_{quarter}"),
     conda:
         "envs/cbs-server-billing.yaml"
     script:
         "scripts/gen_bills.py"
 
+
 rule generate_pdf:
     input:
-        "results/tex_{quarter}/{filename}.tex"
+        "results/tex_{quarter}/{filename}.tex",
     output:
-        "results/pdf_{quarter}/{filename}.pdf"
+        "results/pdf_{quarter}/{filename}.pdf",
     conda:
         "envs/tectonic.yaml"
     container:
@@ -29,14 +41,77 @@ rule generate_pdf:
     shell:
         "mkdir -p results/pdf_{wildcards.quarter} && tectonic {input} -o results/pdf_{wildcards.quarter}"
 
+
 def aggregate_input(wildcards):
-    checkpoint_output = checkpoints.process_all_billing.get(**wildcards).output["quarter_dir"]
+    checkpoint_output = checkpoints.process_all_billing.get(**wildcards).output[
+        "quarter_dir"
+    ]
     output_docs = Path(checkpoint_output) / "{filename}.tex"
     output_pdfs = Path("results") / "pdf_{quarter}" / "{filename}.pdf"
-    return expand(output_pdfs, filename=glob_wildcards(output_docs).filename, allow_missing=True)
+    return expand(
+        output_pdfs, filename=glob_wildcards(output_docs).filename, allow_missing=True
+    )
+
 
 rule aggregate:
     input:
-        aggregate_input
+        aggregate_input,
     output:
-        touch("results/{quarter}.finished")
+        finish_flag=touch("results/{quarter}.finished"),
+
+
+def list_quarters(start_quarter, end_date=None):
+    if end_date is None:
+        end_date = date.today()
+    current_quarter_start = start_quarter
+    current_quarter_end = get_end_of_period(start_quarter.year, start_quarter.month, 3)
+    quarters = []
+    while current_quarter_end < end_date:
+        quarters.append(current_quarter_start)
+        current_quarter_start = current_quarter_end + timedelta(days=1)
+        current_quarter_end = get_end_of_period(
+            current_quarter_start.year, current_quarter_start.month, 3
+        )
+    return quarters
+
+
+def aggregate_summaries(wildcards):
+    quarters = list_quarters(
+        date.fromisoformat(wildcards["start_quarter"]),
+        end_date=date.fromisoformat(wildcards["end_date"]),
+    )
+    summaries = []
+    for quarter in quarters:
+        checkpoint_output = checkpoints.process_all_billing.get(quarter=quarter).output[
+            "quarter_dir"
+        ]
+        summaries.append(Path(checkpoint_output) / f"summary_{quarter}.xlsx")
+    return summaries
+
+
+rule summarize_multiple_quarters:
+    input:
+        summaries=aggregate_summaries,
+    output:
+        summary_json="results/overallsummary_{start_quarter}to{end_date}.json",
+    script:
+        "scripts/grand_total.py"
+
+
+def choose_input():
+    if config.get("quarter", None):
+        return expand(rules.aggregate.output.finish_flag, quarter=config["quarter"])
+    if config.get("start_quarter", None):
+        end_date = config.get("end_date", date.today())
+        return expand(
+            rules.summarize_multiple_quarters.output.summary_json,
+            start_quarter=config["start_quarter"],
+            end_date=end_date,
+        )
+    raise ConfigError("Either quarter or start_quarter must be defined in the config.")
+
+
+rule all:
+    input:
+        choose_input(),
+    default_target: True
