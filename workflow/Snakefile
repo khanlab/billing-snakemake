@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from cbsserverbilling.billing import get_end_of_period
+from cbsserverbilling.policy import get_end_of_period
 
 
 ISO_DATE = "\d{4}-\d{2}-\d{2}"
