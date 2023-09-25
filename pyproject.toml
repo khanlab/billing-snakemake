@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "billing-snakemake"
+version = "0.1.0"
+description = ""
+authors = ["Tristan Kuehn <tkuehn@uwo.ca>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+snakemake = "^7.32.4"
+cbsserverbilling = {git = "https://github.com/khanlab/cbs-server-billing.git"}
+
+[tool.poetry.group.dev.dependencies]
+snakefmt = "^0.8.4"
+ruff = "^0.0.291"
+black = "^23.9.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
