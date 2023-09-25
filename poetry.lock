@@ -88,12 +88,13 @@ develop = false
 Jinja2 = "^3.1.2"
 openpyxl = "^3.1.1"
 pandas = "^1.5.3"
+typing-extensions = "^4.8.0"
 
 [package.source]
 type = "git"
 url = "https://github.com/khanlab/cbs-server-billing.git"
 reference = "HEAD"
-resolved_reference = "431812a2b6ed6cab9cda9ef4134ac41cd60916fe"
+resolved_reference = "688f84b6c3ffcfee7cb624a94fa5db33d0174b36"
 
 [[package]]
 name = "certifi"
