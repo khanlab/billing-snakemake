@@ -6,9 +6,12 @@ authors = ["Tristan Kuehn <tkuehn@uwo.ca>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.9,<4.0"
 snakemake = "^7.32.4"
-cbsserverbilling = {git = "https://github.com/khanlab/cbs-server-billing.git"}
+cbsserverbilling = {path = "./cbs-server-billing", develop = true }
+pulp = "<2.8.0"
+numpy = ">=1.25.2,<2.0.0"
+pandas = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
 snakefmt = "^0.8.4"
